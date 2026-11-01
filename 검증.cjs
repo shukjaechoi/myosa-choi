@@ -1,7 +1,7 @@
 const fs = require('fs'), vm = require('vm'), assert = require('assert');
 const elements = new Map();
 function element(selector) { if (!elements.has(selector)) elements.set(selector, {value: selector === '#date' ? '2026-11-14' : '', classList:{add(){},remove(){},toggle(){}}, addEventListener(){}, scrollTo(){}}); return elements.get(selector); }
-const context = {document:{querySelector:element},localStorage:{getItem(){return null},setItem(){}},window:{scrollTo(){}}, structuredClone, Date, JSON, Math, setTimeout, clearTimeout, console};
+const context = {document:{querySelector:element},localStorage:{getItem(){return null},setItem(){}},window:{scrollTo(){}}, structuredClone, Date, JSON, Math, setTimeout, clearTimeout, console,TextEncoder,TextDecoder,atob,btoa};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync('data.js','utf8')+'\n'+fs.readFileSync('templates.js','utf8')+'\n'+fs.readFileSync('app.js','utf8')+'\n'+fs.readFileSync('ui.js','utf8'),context);
 const cases = [
@@ -19,4 +19,8 @@ assert.equal(vm.runInContext('state.docs.length',context),9);
 assert.equal(vm.runInContext(`state.docs.every((d,i)=>d.lines.every((l,j)=>expand(l.text,getDate()).replace(/\\s/g,'')===ORIGINAL[i].columns[j].replace('乙巳十月癸巳朔 初三日 乙未',getDate().text).replace(/\\s/g,'')))`,context),true,'날짜 외의 원문 보존');
 assert.equal(vm.runInContext(`state.docs.every(d=>d.lines.every(l=>!l.text.trim() || (lineData(l,getDate()).reading && lineData(l,getDate()).meaning)))`,context),true,'모든 구절에 음과 풀이');
 assert.equal(vm.runInContext(`draft=state.docs[0].lines.map(l=>editText(l,getDate())); draft[1]='敢昭告'; let revised=proposedState(); revised.docs[0].lines[1].text==='敢昭告' && revised.docs[0].lines[1].needsReview && revised.docs[0].lines[1].reading==='감소고우' && revised.docs[0].lines[0].text.includes('{{날짜}}')`,context),true,'수정 이력 대상과 날짜 자리 보존');
-console.log('날짜 5건, 첫 토요일 9건, 원문 9편과 음·풀이 검증 통과');
+let saved;
+context.fetch=async (url,options)=>options.method==='PUT'?(saved=JSON.parse(options.body),{ok:true}):({ok:true,json:async()=>({sha:'base-sha',content:btoa('const SHARED_TEMPLATE = null;')})});
+element('#github-dialog').close=()=>{};
+element('#github-token').value='test-only';
+element('#commit-edit').onclick().then(()=>{assert.equal(saved.sha,'base-sha');assert.match(Buffer.from(saved.content,'base64').toString('utf8'),/敢昭告/);assert.equal(element('#github-token').value,'');console.log('날짜 5건, 첫 토요일 9건, 원문과 GitHub 저장 요청 검증 통과')}).catch(e=>{console.error(e);process.exitCode=1});
