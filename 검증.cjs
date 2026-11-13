@@ -16,6 +16,8 @@ const firstSaturdays=['2022-10-29','2023-11-18','2024-11-02','2025-11-22','2026-
 firstSaturdays.forEach((expected,i)=>assert.equal(vm.runInContext(`memorialDate(${2022+i})`,context),expected));
 element('#date').value='2026-11-14';
 assert.equal(vm.runInContext('state.docs.length',context),9);
+assert.equal(vm.runInContext(`state.docs[0].lines.filter(l=>l.text==='顯高祖妣宜人李氏之墓').length`,context),2,'첫 축문의 요청 구절이 두 번 표시되어야 함');
+assert.equal(vm.runInContext(`state.docs.every(d=>{const lines=d.lines.map(l=>expand(l.text,getDate()));const size=Number(printFontSize(lines));return size>0 && size<=27 && lines.length*size*1.4<=521 && Math.max(...lines.map(x=>Array.from(x).length))*size<=646})`,context),true,'인쇄 글자 크기가 페이지 안에 들어가야 함');
 assert.equal(vm.runInContext(`state.docs.every((d,i)=>d.lines.every((l,j)=>expand(l.text,getDate()).replace(/\\s/g,'')===ORIGINAL[i].columns[j].replace('乙巳十月癸巳朔 初三日 乙未',getDate().text).replace(/\\s/g,'')))`,context),true,'날짜 외의 원문 보존');
 assert.equal(vm.runInContext(`state.docs.every(d=>d.lines.every(l=>!l.text.trim() || (lineData(l,getDate()).reading && lineData(l,getDate()).meaning)))`,context),true,'모든 구절에 음과 풀이');
 assert.equal(vm.runInContext(`draft=state.docs[0].lines.map(l=>editText(l,getDate())); draft[1]='敢昭告'; let revised=proposedState(); revised.docs[0].lines[1].text==='敢昭告' && revised.docs[0].lines[1].needsReview && revised.docs[0].lines[1].reading==='감소고우' && revised.docs[0].lines[0].text.includes('{{날짜}}')`,context),true,'수정 이력 대상과 날짜 자리 보존');
